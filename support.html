@@ -227,10 +227,18 @@ h1,h2,h3,p{margin:0}
  .fl{flex-wrap:wrap;justify-content:center;column-gap:18px}.fl a{white-space:nowrap}
 }
 @media (prefers-reduced-motion:no-preference){
- .ph{animation:rise .9s cubic-bezier(.23,1,.32,1) both}
- .phones .p1{animation-delay:.08s}.phones .p3{animation-delay:.16s}
+ .phones .p2{animation:rise .9s cubic-bezier(.23,1,.32,1) both}
+ .phones .p1,.phones .p3{animation:settle 1.1s cubic-bezier(.23,1,.32,1) .28s both}
+ .lang{transition:transform .16s ease-out}.lang:active{transform:scale(.97)}
+ .arm .fshot .ph{opacity:0;translate:0 22px;transition:opacity .7s ease-out,translate .9s cubic-bezier(.23,1,.32,1)}
+ .arm .fshot.in .ph{opacity:1;translate:0 0}
+ .arm .story .ag{stroke-dasharray:1;stroke-dashoffset:1}
+ .arm .story .sun{opacity:0;transition:opacity .5s ease-out}
+ .arm .story .ad{opacity:0;transition:opacity .9s ease-out}
+ .arm .story.in .sun{opacity:1}.arm .story.done .ad{opacity:1}
 }
 @keyframes rise{from{opacity:0;translate:0 24px}}
+@keyframes settle{from{opacity:0;translate:0 30px;rotate:0deg}}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 
 .dhead{position:relative;overflow:hidden;background:linear-gradient(180deg,#081428 0%,#0F2A4F 30%,#24578A 58%,#5D8DB8 74%,#B9AE9C 88%,#E7B583 97.4%,#16262D 97.5%,#0A1117 100%)}
