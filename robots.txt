@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /ann/
+
+Sitemap: https://getarihna.com/sitemap.xml
