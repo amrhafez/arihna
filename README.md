@@ -1,4 +1,4 @@
-# Arihna (أرحنا): Prayer Times & Qibla
+# Arihna (أرحنا): Qibla & Prayer Times
 
 Public site for the Arihna iPhone app: landing page, [privacy policy](https://amrhafez.github.io/arihna/privacy.html) and [support](https://amrhafez.github.io/arihna/support.html).
 
