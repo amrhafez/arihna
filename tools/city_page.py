@@ -28,19 +28,29 @@ CTRY = {
            a1="In Egypt, Arihna follows the Egyptian General Authority for Survey's timetable for your city, and its method on days the timetable does not yet cover. A mosque may round or adjust by a minute."),
    ar=dict(name="مصر", src="من جدول هيئة المساحة الرسمي لـ{c}", calc="محسوبة بطريقة الهيئة المصرية العامة للمساحة حتى نشر جدول 2027", auth="جدول الهيئة المصرية العامة للمساحة",
            a1="في مصر يتبع أرحنا جدول الهيئة المصرية العامة للمساحة لمدينتك، وطريقتها في الأيام التي لم يصدر جدولها بعد. قد يقرّب المسجد الوقت أو يعدّله بدقيقة.")),
+ "gb": dict(zone="Europe/London", order=["london", "birmingham", "manchester", "bradford"],
+   en=dict(name="the UK", src="", calc="Calculated · Moonsighting Committee method · Standard Asr", auth="the Moonsighting Committee method (calculated)", a1="There is no single official timetable in the UK. Arihna calculates with the Moonsighting Committee method; your mosque may use another method or its own timetable. In the app, Match my mosque fits Arihna to your mosque's times."),
+   ar=dict(name="بريطانيا", src="", calc="محسوبة · طريقة لجنة رؤية الهلال · العصر على مذهب الجمهور", auth="طريقة لجنة رؤية الهلال (محسوبة)", a1='لا يوجد في بريطانيا جدول رسمي موحّد. يحسب أرحنا المواقيت بطريقة لجنة رؤية الهلال، وقد يتبع مسجدك طريقة أخرى أو جدوله الخاص. في التطبيق، يضبط خيار «طابِق مسجدك» أرحنا على مواقيت مسجدك.')),
+ "us": dict(zone="America/New_York", order=["new-york", "chicago", "houston", "dallas"],
+   en=dict(name="the US", src="", calc="Calculated · ISNA method · Standard Asr", auth="the ISNA method (calculated)", a1="There is no single official timetable in the US. Arihna calculates with the ISNA method; your mosque may use another method or its own timetable. In the app, Match my mosque fits Arihna to your mosque's times."),
+   ar=dict(name="الولايات المتحدة", src="", calc="محسوبة · طريقة الجمعية الإسلامية لأمريكا الشمالية · العصر على مذهب الجمهور", auth="طريقة الجمعية الإسلامية لأمريكا الشمالية (محسوبة)", a1='لا يوجد في الولايات المتحدة جدول رسمي موحّد. يحسب أرحنا المواقيت بطريقة الجمعية الإسلامية لأمريكا الشمالية (ISNA)، وقد يتبع مسجدك طريقة أخرى أو جدوله الخاص. في التطبيق، يضبط خيار «طابِق مسجدك» أرحنا على مواقيت مسجدك.')),
+ "ca": dict(zone="America/Toronto", order=["toronto", "mississauga", "montreal", "calgary"],
+   en=dict(name="Canada", src="", calc="Calculated · ISNA method · Standard Asr", auth="the ISNA method (calculated)", a1="There is no single official timetable in Canada. Arihna calculates with the ISNA method; your mosque may use another method or its own timetable. In the app, Match my mosque fits Arihna to your mosque's times."),
+   ar=dict(name="كندا", src="", calc="محسوبة · طريقة الجمعية الإسلامية لأمريكا الشمالية · العصر على مذهب الجمهور", auth="طريقة الجمعية الإسلامية لأمريكا الشمالية (محسوبة)", a1='لا يوجد في كندا جدول رسمي موحّد. يحسب أرحنا المواقيت بطريقة الجمعية الإسلامية لأمريكا الشمالية (ISNA)، وقد يتبع مسجدك طريقة أخرى أو جدوله الخاص. في التطبيق، يضبط خيار «طابِق مسجدك» أرحنا على مواقيت مسجدك.')),
 }
 DATA = {}
+SLUG = {"new-york-city-ny": "new-york", "chicago-il": "chicago", "houston-tx": "houston", "dallas-tx": "dallas"}  # shorter addresses for US cities
 for cc in CTRY:
     d = json.load(open(f"data/cities-{cc}.json", encoding="utf-8"))
     if cc != "ae":  # exported with the app's ids, e.g. "sa-riyadh"
         for k in ("cities", "names", "official"):
-            if k in d: d[k] = {c.split("-", 1)[1]: v for c, v in d[k].items()}
+            if k in d: d[k] = {SLUG.get(c.split("-", 1)[1], c.split("-", 1)[1]): v for c, v in d[k].items()}
     DATA[cc] = d
 KEYS = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"]
 NAMES = {"en": ["Fajr", "Shurooq", "Dhuhr", "Asr", "Maghrib", "Isha"], "ar": ["الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء"]}
 WIND = {"en": ["north", "north-northeast", "northeast", "east-northeast", "east", "east-southeast", "southeast", "south-southeast", "south", "south-southwest", "southwest", "west-southwest", "west", "west-northwest", "northwest", "north-northwest"],
         "ar": ["الشمال", "شمال الشمال الشرقي", "الشمال الشرقي", "شرق الشمال الشرقي", "الشرق", "شرق الجنوب الشرقي", "الجنوب الشرقي", "جنوب الجنوب الشرقي", "الجنوب", "جنوب الجنوب الغربي", "الجنوب الغربي", "غرب الجنوب الغربي", "الغرب", "غرب الشمال الغربي", "الشمال الغربي", "شمال الشمال الغربي"]}
-OCC_AR = {"Founding Day": "يوم التأسيس", "Flag Day": "يوم العلم", "Saudi National Day": "اليوم الوطني السعودي", "Coptic Christmas": "عيد الميلاد المجيد",
+OCC_AR = {"Founding Day": "يوم التأسيس", "Boxing Day": "يوم الهدايا", "Boxing Day (substitute day)": "يوم الهدايا (يوم بديل)", "Christmas Day": "عيد الميلاد", "Early May bank holiday": "عطلة أوائل مايو", "Easter Monday": "اثنين الفصح", "Good Friday": "الجمعة العظيمة", "Martin Luther King Jr. Day": "يوم مارتن لوثر كينغ", "Memorial Day": "يوم الذكرى", "Thanksgiving Day": "عيد الشكر", "Victoria Day": "يوم فيكتوريا", "Washington's Birthday": "ذكرى ميلاد واشنطن", "Flag Day": "يوم العلم", "Saudi National Day": "اليوم الوطني السعودي", "Coptic Christmas": "عيد الميلاد المجيد",
           "25 January Revolution and Police Day": "عيد ثورة 25 يناير وعيد الشرطة", "Sinai Liberation Day": "عيد تحرير سيناء", "Sham El Nessim": "شم النسيم", "Labour Day": "عيد العمال",
           "UAE National Day": "عيد الاتحاد", "New Year's Day": "رأس السنة الميلادية", "Isra and Mi'raj": "الإسراء والمعراج",
           "Zayed the Founder Day": "يوم زايد المؤسِّس", "Mid-Sha'ban": "منتصف شعبان", "Ramadan begins": "بداية رمضان",
@@ -128,7 +138,7 @@ def page(cc, slug, lang):
         evs.append([iso(g), nm, glong(g, lang), 1 if e.get("isl") else 0])
     ev0 = evs[0]
     def evline(ev, n):
-        when = L["today"] if n == 0 else L["tomorrow"] if n == 1 else L["indays"].format(n=n)
+        when = L["today"] if n == 0 else L["tomorrow"] if n == 1 else (("بعد يومين" if n == 2 else f"بعد {n} أيام" if 3 <= n % 100 <= 10 else f"بعد {n} يومًا") if rtl else L["indays"].format(n=n))
         return f'{ev[2]}{" · " + L["exp"] if ev[3] else ""} · {when}'
     import datetime
     n0 = (datetime.date.fromisoformat(ev0[0]) - datetime.date(d0["y"], d0["m"], d0["d"])).days
@@ -240,8 +250,8 @@ footer{{margin-top:44px;padding:22px 0 max(26px,env(safe-area-inset-bottom));bor
 </div>
 <script>
 /* Today's times, this week and the next prayer, by the UAE clock. Runs on the page only; nothing is sent anywhere. */
-(function(){{var D={J(DAYS)},E={J(evs)},N={J(NAMES[lang])},S={J({"nowin": L["nowin"], "exp": L["exp"], "today": L["today"], "tomorrow": L["tomorrow"], "indays": L["indays"], "old": L["old"], "src": L["src"], "calc": L["calc"]})},SUF={J(["AM", "PM"] if lang == "en" else ["ص", "م"])};
-var f=new Intl.DateTimeFormat("en-CA",{{timeZone:"{K["zone"]}",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}});
+(function(){{var D={J(DAYS)},E={J(evs)},N={J(NAMES[lang])},S={J({"nowin": L["nowin"], "exp": L["exp"], "today": L["today"], "tomorrow": L["tomorrow"], "indays": L["indays"], "old": L["old"], "src": L["src"], "calc": L["calc"]})},SUF={J(["AM", "PM"] if lang == "en" else ["ص", "م"])},AR={"true" if rtl else "false"};
+var f=new Intl.DateTimeFormat("en-CA",{{timeZone:"{loc.get("zone") or K["zone"]}",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}});
 function now(){{var p={{}};f.formatToParts(new Date()).forEach(function(x){{p[x.type]=x.value}});return {{d:p.year+"-"+p.month+"-"+p.day,m:(+p.hour)*60+(+p.minute)+(+p.second)/60}}}}
 function hm(m){{var h=Math.floor(m/60),mi=m%60;return [(h%12||12)+":"+(mi<10?"0":"")+mi,SUF[h<12?0:1]]}}
 function esc(s){{return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")}}
@@ -250,7 +260,7 @@ function paint(i){{var d=D[i],li=document.querySelectorAll("#times li");document
  [].forEach.call(li,function(x,j){{var t=hm(d[3][j]);x.querySelector("b").textContent=t[0];x.querySelector("small").textContent=t[1]}});
  var o="";for(var k=i;k<Math.min(i+7,D.length);k++){{o+='<tr><th scope="row"><b>'+esc(D[k][1])+"</b><span>"+esc(D[k][2])+"</span></th>"+D[k][3].map(function(m){{return "<td>"+hm(m)[0]+"</td>"}}).join("")+"</tr>"}}document.getElementById("wkb").innerHTML=o;
  var t0=Date.parse(d[0]+"T00:00:00Z");for(var e=0;e<E.length;e++){{var n=Math.round((Date.parse(E[e][0]+"T00:00:00Z")-t0)/864e5);if(n>=0){{document.getElementById("evn").textContent=E[e][1];
-  document.getElementById("evd").textContent=E[e][2]+(E[e][3]?" · "+S.exp:"")+" · "+(n===0?S.today:n===1?S.tomorrow:S.indays.replace("{{n}}",n));break}}}}}}
+  document.getElementById("evd").textContent=E[e][2]+(E[e][3]?" · "+S.exp:"")+" · "+(n===0?S.today:n===1?S.tomorrow:AR?(n===2?"بعد يومين":(n%100>=3&&n%100<=10)?"بعد "+n+" أيام":"بعد "+n+" يومًا"):S.indays.replace("{{n}}",n));break}}}}}}
 function run(){{var n=now(),i=-1;for(var k=0;k<D.length;k++)if(D[k][0]===n.d){{i=k;break}}var cd=document.getElementById("cd");
  if(i<0){{if(n.d>D[D.length-1][0]&&!run.old){{run.old=1;document.querySelector(".hero").classList.add("old");cd.textContent=S.old}}return}}
  if(i!==day){{day=i;paint(i)}}var t=D[i][3],li=document.querySelectorAll("#times li"),x=-1,at=0;
