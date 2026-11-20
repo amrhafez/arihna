@@ -12,14 +12,37 @@ Refresh: re-export and rebuild about once a month, so the file always reaches a 
 """
 import json, html, math, os, sys
 
-SRC = sys.argv[1] if len(sys.argv) > 1 else "data/cities-ae.json"
-D = json.load(open(SRC, encoding="utf-8"))
-ORDER = ["abu-dhabi", "dubai", "sharjah", "al-ain", "ajman", "umm-al-quwain", "ras-al-khaimah", "fujairah"]
+CTRY = {
+ "ae": dict(zone="Asia/Dubai", order=["abu-dhabi", "dubai", "sharjah", "al-ain", "ajman", "umm-al-quwain", "ras-al-khaimah", "fujairah"],
+   en=dict(name="the UAE", src="From the official Awqaf timetable for {c}", calc="", auth="the official Awqaf timetable",
+           a1="In the UAE, Arihna follows the official Awqaf timetable for your area. A mosque may round or adjust by a minute."),
+   ar=dict(name="الإمارات", src="من جدول الأوقاف الرسمي لـ{c}", calc="", auth="جدول الأوقاف الرسمي",
+           a1="في الإمارات يتبع أرحنا جدول الأوقاف الرسمي لمنطقتك. قد يقرّب المسجد الوقت أو يعدّله بدقيقة.")),
+ "sa": dict(zone="Asia/Riyadh", order=["mecca", "medina", "riyadh", "jeddah", "dammam", "al-khobar", "taif", "abha", "tabuk", "buraydah"],
+   en=dict(name="Saudi Arabia", src="From the official Umm al-Qura timetable for {c}", calc="", auth="the official Umm al-Qura timetable",
+           a1="In Saudi Arabia, Arihna follows the official Umm al-Qura timetable for your city. A mosque may round or adjust by a minute."),
+   ar=dict(name="السعودية", src="من تقويم أم القرى الرسمي لـ{c}", calc="", auth="تقويم أم القرى الرسمي",
+           a1="في السعودية يتبع أرحنا تقويم أم القرى الرسمي لمدينتك. قد يقرّب المسجد الوقت أو يعدّله بدقيقة.")),
+ "eg": dict(zone="Africa/Cairo", order=["cairo", "alexandria", "mansoura", "tanta", "port-said", "suez", "asyut", "luxor", "aswan", "hurghada"],
+   en=dict(name="Egypt", src="From the official Survey Authority timetable for {c}", calc="Calculated with the Egyptian Survey Authority's method until its 2027 timetable is published", auth="the Egyptian Survey Authority's timetable",
+           a1="In Egypt, Arihna follows the Egyptian General Authority for Survey's timetable for your city, and its method on days the timetable does not yet cover. A mosque may round or adjust by a minute."),
+   ar=dict(name="مصر", src="من جدول هيئة المساحة الرسمي لـ{c}", calc="محسوبة بطريقة الهيئة المصرية العامة للمساحة حتى نشر جدول 2027", auth="جدول الهيئة المصرية العامة للمساحة",
+           a1="في مصر يتبع أرحنا جدول الهيئة المصرية العامة للمساحة لمدينتك، وطريقتها في الأيام التي لم يصدر جدولها بعد. قد يقرّب المسجد الوقت أو يعدّله بدقيقة.")),
+}
+DATA = {}
+for cc in CTRY:
+    d = json.load(open(f"data/cities-{cc}.json", encoding="utf-8"))
+    if cc != "ae":  # exported with the app's ids, e.g. "sa-riyadh"
+        for k in ("cities", "names", "official"):
+            if k in d: d[k] = {c.split("-", 1)[1]: v for c, v in d[k].items()}
+    DATA[cc] = d
 KEYS = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"]
 NAMES = {"en": ["Fajr", "Shurooq", "Dhuhr", "Asr", "Maghrib", "Isha"], "ar": ["الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء"]}
 WIND = {"en": ["north", "north-northeast", "northeast", "east-northeast", "east", "east-southeast", "southeast", "south-southeast", "south", "south-southwest", "southwest", "west-southwest", "west", "west-northwest", "northwest", "north-northwest"],
         "ar": ["الشمال", "شمال الشمال الشرقي", "الشمال الشرقي", "شرق الشمال الشرقي", "الشرق", "شرق الجنوب الشرقي", "الجنوب الشرقي", "جنوب الجنوب الشرقي", "الجنوب", "جنوب الجنوب الغربي", "الجنوب الغربي", "غرب الجنوب الغربي", "الغرب", "غرب الشمال الغربي", "الشمال الغربي", "شمال الشمال الغربي"]}
-OCC_AR = {"UAE National Day": "عيد الاتحاد", "New Year's Day": "رأس السنة الميلادية", "Isra and Mi'raj": "الإسراء والمعراج",
+OCC_AR = {"Founding Day": "يوم التأسيس", "Flag Day": "يوم العلم", "Saudi National Day": "اليوم الوطني السعودي", "Coptic Christmas": "عيد الميلاد المجيد",
+          "25 January Revolution and Police Day": "عيد ثورة 25 يناير وعيد الشرطة", "Sinai Liberation Day": "عيد تحرير سيناء", "Sham El Nessim": "شم النسيم", "Labour Day": "عيد العمال",
+          "UAE National Day": "عيد الاتحاد", "New Year's Day": "رأس السنة الميلادية", "Isra and Mi'raj": "الإسراء والمعراج",
           "Zayed the Founder Day": "يوم زايد المؤسِّس", "Mid-Sha'ban": "منتصف شعبان", "Ramadan begins": "بداية رمضان",
           "Laylat al-Qadr": "ليلة القدر", "Eid al-Fitr": "عيد الفطر", "Arafat Day": "يوم عرفة", "Eid al-Adha": "عيد الأضحى",
           "Islamic New Year": "رأس السنة الهجرية", "Ashura": "عاشوراء", "The Prophet's Birthday": "المولد النبوي"}
@@ -57,7 +80,8 @@ def gshort(x, lang): return f"{WD[lang][x['wd']]} {x['d']} {MON[lang][x['m'] - 1
 def glong(x, lang): return f"{WDL[lang][x['wd']]} {x['d']} {MONL[lang][x['m'] - 1]} {x['y']}" if lang == "en" else f"{WDL[lang][x['wd']]} {x['d']} {MONL[lang][x['m'] - 1]} {x['y']}"
 
 
-def page(slug, lang):
+def page(cc, slug, lang):
+    D = DATA[cc]; K = CTRY[cc]; Kl = K[lang]; ORDER = K["order"]; mecca = slug == "mecca"
     rtl = lang == "ar"; en_name = D["cities"][slug]["loc"]["name"]; ar_name = D["names"][slug]; city = ar_name if rtl else en_name
     loc = D["cities"][slug]["loc"]; az, km = vincenty(loc["lat"], loc["lng"]); wind = WIND[lang][round(az / 22.5) % 16]
     deg = f"{az:.1f}°"; dist = f"{round(km):,}"
@@ -66,22 +90,22 @@ def page(slug, lang):
     self_href = f"https://getarihna.com/{'ar/' if rtl else ''}prayer-times/{slug}/"
     L = {
      "en": dict(title=f"Prayer times in {city} today | Arihna",
-       desc=f"Today's prayer times in {city} from the official Awqaf timetable: Fajr, Shurooq, Dhuhr, Asr, Maghrib and Isha, this week's times and the Qibla direction.",
-       h1=f"Prayer times in {city}", src=f"From the official Awqaf timetable for {city}", week="This week", day="Day", qibla="Qibla",
+       desc=f"Today's prayer times in {city} from {Kl['auth']}: Fajr, Shurooq, Dhuhr, Asr, Maghrib and Isha, this week's times and the Qibla direction.",
+       h1=f"Prayer times in {city}", src=Kl["src"].format(c=city), calc=Kl["calc"], week="This week", day="Day", qibla="Qibla",
        qline=f"from true north · {wind.capitalize()} · {dist} km to the Kaaba", occ="Next occasion", app="The sky, the countdown and alerts, in the app",
        applead="Arihna draws these times on the sun's real path, with a Qibla compass, the moon and the Hijri calendar. Free, no ads, no tracking.",
-       faq="Questions", q1="Times differ from the mosque by a minute?", a1="In the UAE, Arihna follows the official Awqaf timetable for your area. A mosque may round or adjust by a minute.",
+       faq="Questions", q1="Times differ from the mosque by a minute?", a1=Kl["a1"],
        q2=f"Which direction is the Qibla from {city}?", a2=f"{deg} from true north ({wind}), along the shortest path to the Kaaba over the round Earth.",
-       more="Other cities in the UAE", home="Arihna", other="العربية", dl="Download on the App Store",
+       more=f"Other cities in {Kl['name']}", home="Arihna", other="العربية", dl="Download on the App Store",
        rights="© 2026 Amr Hafez. All rights reserved", privacy="Privacy", support="Support", upd="Updated monthly", nowin="{p} in {t}", exp="expected", today="Today", tomorrow="Tomorrow", indays="in {n} days", old="These times are being updated. Open Arihna for today's times."),
      "ar": dict(title=f"مواقيت الصلاة في {city} اليوم | أرحنا",
-       desc=f"مواقيت الصلاة اليوم في {city} من جدول الأوقاف الرسمي: الفجر والشروق والظهر والعصر والمغرب والعشاء، ومواقيت هذا الأسبوع واتجاه القبلة.",
-       h1=f"مواقيت الصلاة في {city}", src=f"من جدول الأوقاف الرسمي لـ{city}", week="هذا الأسبوع", day="اليوم", qibla="القبلة",
+       desc=f"مواقيت الصلاة اليوم في {city} من {Kl['auth']}: الفجر والشروق والظهر والعصر والمغرب والعشاء، ومواقيت هذا الأسبوع واتجاه القبلة.",
+       h1=f"مواقيت الصلاة في {city}", src=Kl["src"].format(c=city), calc=Kl["calc"], week="هذا الأسبوع", day="اليوم", qibla="القبلة",
        qline=f"من الشمال الحقيقي · {wind} · {dist} كم إلى الكعبة", occ="المناسبة القادمة", app="السماء والعد التنازلي والتنبيهات، في التطبيق",
        applead="يرسم أرحنا هذه المواقيت على مسار الشمس الحقيقي، مع بوصلة القبلة والقمر والتقويم الهجري. مجاني، بلا إعلانات ولا تتبّع.",
-       faq="أسئلة", q1="المواقيت تختلف عن المسجد بدقيقة؟", a1="في الإمارات يتبع أرحنا جدول الأوقاف الرسمي لمنطقتك. قد يقرّب المسجد الوقت أو يعدّله بدقيقة.",
+       faq="أسئلة", q1="المواقيت تختلف عن المسجد بدقيقة؟", a1=Kl["a1"],
        q2=f"ما اتجاه القبلة من {city}؟", a2=f"{deg} من الشمال الحقيقي (جهة {wind})، على أقصر مسار إلى الكعبة على الأرض الكروية.",
-       more="مدن أخرى في الإمارات", home="أرحنا", other="English", dl="حمّل من App Store",
+       more=f"مدن أخرى في {Kl['name']}", home="أرحنا", other="English", dl="حمّل من App Store",
        rights="© 2026 عمرو حافظ. جميع الحقوق محفوظة", privacy="الخصوصية", support="الدعم", upd="تُحدَّث شهريًا", nowin="{p} بعد {t}", exp="متوقع", today="اليوم", tomorrow="غدًا", indays="بعد {n} يومًا", old="يجري تحديث هذه المواقيت. افتح أرحنا لمواقيت اليوم."),
     }[lang]
     d0 = days[0]; t0 = times[0]
@@ -108,18 +132,19 @@ def page(slug, lang):
         return f'{ev[2]}{" · " + L["exp"] if ev[3] else ""} · {when}'
     import datetime
     n0 = (datetime.date.fromisoformat(ev0[0]) - datetime.date(d0["y"], d0["m"], d0["d"])).days
-    DAYS = [[iso(days[i]), gshort(days[i], lang), hij[i], times[i]] for i in range(len(days))]
+    OFFI = D.get("official", {}).get(slug) or [1] * len(days)
+    DAYS = [[iso(days[i]), gshort(days[i], lang), hij[i], times[i], OFFI[i]] for i in range(len(days))]
     others = "".join(f'<a href="../{s}/">{D["names"][s] if rtl else D["cities"][s]["loc"]["name"]}</a>' for s in ORDER if s != slug)
     ld = {"@context": "https://schema.org", "@graph": [
         {"@type": "WebPage", "@id": self_href, "url": self_href, "name": L["title"], "description": L["desc"], "inLanguage": lang,
-         "about": {"@type": "City", "name": city, "address": {"@type": "PostalAddress", "addressLocality": en_name, "addressCountry": "AE"}},
+         "about": {"@type": "City", "name": city, "address": {"@type": "PostalAddress", "addressLocality": en_name, "addressCountry": cc.upper()}},
          "isPartOf": {"@id": "https://getarihna.com/#site"}},
         {"@type": "BreadcrumbList", "itemListElement": [
             {"@type": "ListItem", "position": 1, "name": "Arihna" if not rtl else "أرحنا", "item": "https://getarihna.com/" + ("ar/" if rtl else "")},
             {"@type": "ListItem", "position": 2, "name": L["h1"], "item": self_href}]},
         {"@type": "FAQPage", "mainEntity": [
-            {"@type": "Question", "name": L["q1"], "acceptedAnswer": {"@type": "Answer", "text": L["a1"]}},
-            {"@type": "Question", "name": L["q2"], "acceptedAnswer": {"@type": "Answer", "text": L["a2"]}}]}]}
+            {"@type": "Question", "name": L["q1"], "acceptedAnswer": {"@type": "Answer", "text": L["a1"]}}] + ([] if mecca else [
+            {"@type": "Question", "name": L["q2"], "acceptedAnswer": {"@type": "Answer", "text": L["a2"]}}])}]}
     head_cells = "".join(f'<th scope="col">{x}</th>' for x in NAMES[lang])
     J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
     return f'''<!doctype html>
@@ -167,7 +192,7 @@ h1{{margin:0;font-size:clamp(28px,6vw,40px);font-weight:500;letter-spacing:-.01e
 .times li.minor b{{color:var(--fg2)}}
 .times li.nx{{background:rgba(123,227,190,.12);box-shadow:inset 0 0 0 1px rgba(123,227,190,.42)}}.times li.nx .n{{color:var(--accent)}}
 .hero.old .times,.hero.old .date{{opacity:.35}}
-.src{{display:inline-flex;align-items:center;gap:7px;margin-top:16px;padding:6px 12px;border-radius:999px;font-size:13px;color:var(--accent);background:rgba(123,227,190,.1)}}.src svg{{width:14px;height:14px;flex:none}}
+.src{{display:inline-flex;align-items:center;gap:7px;margin-top:16px;padding:6px 12px;border-radius:999px;font-size:13px;color:var(--accent);background:rgba(123,227,190,.1)}}.src svg{{width:14px;height:14px;flex:none}}.src.calc{{color:var(--fg2);background:rgba(255,255,255,.07)}}.src.calc svg{{display:none}}
 section{{margin-top:34px}}h2{{font-size:20px;font-weight:500;margin:0 0 12px}}
 .tw{{overflow-x:auto;border-radius:20px;box-shadow:inset 0 0 0 1px var(--line);background:var(--ink2)}}
 table{{border-collapse:collapse;width:100%;min-width:500px;font-size:14.5px;font-variant-numeric:tabular-nums}}
@@ -198,30 +223,30 @@ footer{{margin-top:44px;padding:22px 0 max(26px,env(safe-area-inset-bottom));bor
 <p class="date" id="date"><b>{gshort(d0, lang)}</b> · {html.escape(hij[0])}</p>
 <p class="cd" id="cd" aria-live="polite"></p>
 <ul class="times" id="times">{tiles(t0)}</ul>
-<span class="src"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{L["src"]}</span>
+<span class="src{"" if OFFI[0] else " calc"}" id="srcw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span id="srct">{L["src"] if OFFI[0] else L["calc"]}</span></span>
 </div>
 <section aria-labelledby="wk"><h2 id="wk">{L["week"]}</h2><div class="tw"><table><thead><tr><th scope="col">{L["day"]}</th>{head_cells}</tr></thead><tbody id="wkb">{rows(0)}</tbody></table></div></section>
 <section class="cards">
-<div class="card"><small>{L["qibla"]}</small><b>{deg}</b><span>{L["qline"]}</span></div>
+<div class="card"><small>{L["qibla"]}</small><b>{deg if not mecca else ("Al-Masjid al-Haram" if not rtl else "المسجد الحرام")}</b><span>{L["qline"] if not mecca else ("The Kaaba is in Makkah: face it from wherever you pray." if not rtl else "الكعبة المشرفة في مكة، فاستقبلها حيثما صليت.")}</span></div>
 <div class="card"><small>{L["occ"]}</small><b id="evn">{ev0[1]}</b><span id="evd">{evline(ev0, n0)}</span></div>
 </section>
 <section class="app"><div><h2>{L["app"]}</h2><p>{L["applead"]}</p></div><a href="{STORE}{slug}-{lang}"><img src="{pre}img/badge-app-store.svg" alt="{L["dl"]}" width="150" height="50"></a></section>
 <section aria-labelledby="fq"><h2 id="fq">{L["faq"]}</h2>
 <details><summary>{L["q1"]}</summary><p>{L["a1"]}</p></details>
-<details><summary>{L["q2"]}</summary><p>{L["a2"]}</p></details></section>
+{"" if mecca else f'<details><summary>{L["q2"]}</summary><p>{L["a2"]}</p></details>'}</section>
 <section aria-labelledby="oc"><h2 id="oc">{L["more"]}</h2><nav class="cities">{others}</nav></section>
 </main>
 <footer><span>{L["rights"]}</span><span><a href="{pre}privacy.html{'?lang=ar' if rtl else ''}">{L["privacy"]}</a> · <a href="{pre}support.html{'?lang=ar' if rtl else ''}">{L["support"]}</a> · {L["upd"]}</span></footer>
 </div>
 <script>
 /* Today's times, this week and the next prayer, by the UAE clock. Runs on the page only; nothing is sent anywhere. */
-(function(){{var D={J(DAYS)},E={J(evs)},N={J(NAMES[lang])},S={J({"nowin": L["nowin"], "exp": L["exp"], "today": L["today"], "tomorrow": L["tomorrow"], "indays": L["indays"], "old": L["old"]})},SUF={J(["AM", "PM"] if lang == "en" else ["ص", "م"])};
-var f=new Intl.DateTimeFormat("en-CA",{{timeZone:"Asia/Dubai",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}});
+(function(){{var D={J(DAYS)},E={J(evs)},N={J(NAMES[lang])},S={J({"nowin": L["nowin"], "exp": L["exp"], "today": L["today"], "tomorrow": L["tomorrow"], "indays": L["indays"], "old": L["old"], "src": L["src"], "calc": L["calc"]})},SUF={J(["AM", "PM"] if lang == "en" else ["ص", "م"])};
+var f=new Intl.DateTimeFormat("en-CA",{{timeZone:"{K["zone"]}",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}});
 function now(){{var p={{}};f.formatToParts(new Date()).forEach(function(x){{p[x.type]=x.value}});return {{d:p.year+"-"+p.month+"-"+p.day,m:(+p.hour)*60+(+p.minute)+(+p.second)/60}}}}
 function hm(m){{var h=Math.floor(m/60),mi=m%60;return [(h%12||12)+":"+(mi<10?"0":"")+mi,SUF[h<12?0:1]]}}
 function esc(s){{return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")}}
 var day=null;
-function paint(i){{var d=D[i],li=document.querySelectorAll("#times li");document.getElementById("date").innerHTML="<b>"+esc(d[1])+"</b> · "+esc(d[2]);
+function paint(i){{var d=D[i],li=document.querySelectorAll("#times li");document.getElementById("srct").textContent=d[4]?S.src:S.calc;document.getElementById("srcw").classList.toggle("calc",!d[4]);document.getElementById("date").innerHTML="<b>"+esc(d[1])+"</b> · "+esc(d[2]);
  [].forEach.call(li,function(x,j){{var t=hm(d[3][j]);x.querySelector("b").textContent=t[0];x.querySelector("small").textContent=t[1]}});
  var o="";for(var k=i;k<Math.min(i+7,D.length);k++){{o+='<tr><th scope="row"><b>'+esc(D[k][1])+"</b><span>"+esc(D[k][2])+"</span></th>"+D[k][3].map(function(m){{return "<td>"+hm(m)[0]+"</td>"}}).join("")+"</tr>"}}document.getElementById("wkb").innerHTML=o;
  var t0=Date.parse(d[0]+"T00:00:00Z");for(var e=0;e<E.length;e++){{var n=Math.round((Date.parse(E[e][0]+"T00:00:00Z")-t0)/864e5);if(n>=0){{document.getElementById("evn").textContent=E[e][1];
@@ -243,7 +268,7 @@ run();setInterval(run,1000)}})();
 
 
 def sitemap():
-    pairs = [("https://getarihna.com/", "https://getarihna.com/ar/")] + [(f"https://getarihna.com/prayer-times/{s}/", f"https://getarihna.com/ar/prayer-times/{s}/") for s in ORDER]
+    pairs = [("https://getarihna.com/", "https://getarihna.com/ar/")] + [(f"https://getarihna.com/prayer-times/{s}/", f"https://getarihna.com/ar/prayer-times/{s}/") for cc in CTRY for s in CTRY[cc]["order"]]
     x = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">']
     for en, ar in pairs:
         for loc in (en, ar):
@@ -253,10 +278,13 @@ def sitemap():
     open("sitemap.xml", "w").write("\n".join(x) + "\n")
 
 
-for slug in ORDER:
-    for lang in ("en", "ar"):
-        out = f"prayer-times/{slug}/index.html" if lang == "en" else f"ar/prayer-times/{slug}/index.html"
-        os.makedirs(os.path.dirname(out), exist_ok=True)
-        open(out, "w", encoding="utf-8").write(page(slug, lang))
+n = 0
+for cc in CTRY:
+    for slug in CTRY[cc]["order"]:
+        for lang in ("en", "ar"):
+            out = f"prayer-times/{slug}/index.html" if lang == "en" else f"ar/prayer-times/{slug}/index.html"
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            open(out, "w", encoding="utf-8").write(page(cc, slug, lang)); n += 1
+    print(cc, "days", iso(DATA[cc]["days"][0]), "to", iso(DATA[cc]["days"][-1]))
 sitemap()
-print("wrote", len(ORDER) * 2, "city pages and sitemap.xml; days", iso(D["days"][0]), "to", iso(D["days"][-1]))
+print("wrote", n, "city pages and sitemap.xml")
