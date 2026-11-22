@@ -34,4 +34,4 @@ jobs:
           ANN_KEY: ${{ secrets.ANN_KEY_P1 }}
         run: |
           python3 ann/tools/sign.py ann/src/v1.items.json /tmp/v1.json --kid p1
-          echo "SIGNED $(base64 -w0 /tmp/v1.json)"
+          python3 -c "import json;f=json.load(open('/tmp/v1.json'));print('SIG',f['sig'].encode().hex());print('PAY',f['payload'].encode().hex())"
