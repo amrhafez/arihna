@@ -1,6 +1,6 @@
 name: Print the announcements public key (temporary)
 
-# Runs once from this branch so the app can trust the production key; prints only the public half.
+# Runs from this branch only (removed before merge) so the app can trust the production key; prints only the public half.
 on:
   push:
     branches: [ann-pipeline]
@@ -28,3 +28,10 @@ jobs:
           u = lambda i: base64.urlsafe_b64encode(i.to_bytes(32, 'big')).rstrip(b'=').decode()
           print('PUBKEY p1 x=' + u(k.x) + ' y=' + u(k.y))
           PY
+      - uses: actions/checkout@v4
+      - name: Sign the (empty) source as a check, printed (a signed file is public)
+        env:
+          ANN_KEY: ${{ secrets.ANN_KEY_P1 }}
+        run: |
+          python3 ann/tools/sign.py ann/src/v1.items.json /tmp/v1.json --kid p1
+          echo "SIGNED $(base64 -w0 /tmp/v1.json)"
