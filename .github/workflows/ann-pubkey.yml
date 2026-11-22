@@ -1,0 +1,30 @@
+name: Print the announcements public key (temporary)
+
+# Runs once from this branch so the app can trust the production key; prints only the public half.
+on:
+  push:
+    branches: [ann-pipeline]
+    paths: [".github/workflows/ann-pubkey.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  public-key:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install the signing library
+        run: pip install --quiet cryptography
+      - name: Print the public key
+        env:
+          ANN_KEY: ${{ secrets.ANN_KEY_P1 }}
+        run: |
+          test -n "$ANN_KEY" || { echo "::error::The ANN_KEY_P1 secret is not set"; exit 1; }
+          python3 - <<'PY'
+          import base64, os
+          from cryptography.hazmat.primitives import serialization
+          k = serialization.load_pem_private_key(os.environ['ANN_KEY'].encode(), None).public_key().public_numbers()
+          u = lambda i: base64.urlsafe_b64encode(i.to_bytes(32, 'big')).rstrip(b'=').decode()
+          print('PUBKEY p1 x=' + u(k.x) + ' y=' + u(k.y))
+          PY
