@@ -1,0 +1,64 @@
+name: Sign and publish the announcements file
+
+# Amr approves an announcement by merging the pull request that changes ann/src/v1.items.json.
+# This workflow then signs it with the production key (GitHub secret ANN_KEY_P1, never in the repository)
+# and commits ann/v1.json, which GitHub Pages publishes. Nothing is published without that merge.
+on:
+  push:
+    branches: [main]
+    paths: ["ann/src/v1.items.json"]
+  workflow_dispatch:
+    inputs:
+      public_key:
+        description: "Only print the production public key (x, y) for the app; signs nothing"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ann-sign
+  cancel-in-progress: false
+
+jobs:
+  sign:
+    if: ${{ !inputs.public_key }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the signing library
+        run: pip install --quiet cryptography
+      - name: Sign
+        env:
+          ANN_KEY: ${{ secrets.ANN_KEY_P1 }}
+        run: |
+          test -n "$ANN_KEY" || { echo "::error::The ANN_KEY_P1 secret is not set"; exit 1; }
+          python3 ann/tools/sign.py ann/src/v1.items.json ann/v1.json --kid p1
+      - name: Publish
+        run: |
+          git config user.name "Arihna announcements"
+          git config user.email "arihna.app@gmail.com"
+          git add ann/v1.json
+          git diff --cached --quiet && { echo "Nothing changed"; exit 0; }
+          git commit -m "Announcements: signed ann/v1.json from ann/src/v1.items.json"
+          git push
+  public-key:
+    if: ${{ inputs.public_key }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install the signing library
+        run: pip install --quiet cryptography
+      - name: Print the public key
+        env:
+          ANN_KEY: ${{ secrets.ANN_KEY_P1 }}
+        run: |
+          python3 - <<'PY'
+          import base64, os
+          from cryptography.hazmat.primitives import serialization
+          k = serialization.load_pem_private_key(os.environ['ANN_KEY'].encode(), None).public_key().public_numbers()
+          u = lambda i: base64.urlsafe_b64encode(i.to_bytes(32, 'big')).rstrip(b'=').decode()
+          print('p1 x=' + u(k.x) + ' y=' + u(k.y))
+          PY
