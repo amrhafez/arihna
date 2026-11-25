@@ -20,7 +20,8 @@ for it in data['items']:
     assert it['state'] in ('expected', 'announced'), it['state']
     # 1.2.2 pipeline checks: only the countries Arihna serves, real dates, both languages where text is shown
     import re as _re
-    assert it['country'] in ('ae', 'sa', 'eg', 'gb', 'us', 'ca', 'om', 'bh', 'qa', 'jo', 'kw'), it['country']
+    # fc = the Fiqh Council of North America (readers following it, in the US, Canada or anywhere)
+    assert it['country'] in ('ae', 'sa', 'eg', 'fc', 'gb', 'us', 'ca', 'om', 'bh', 'qa', 'jo', 'kw'), it['country']
     assert _re.fullmatch(r'20\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])', str(it['ev'])), it['ev']
     datetime.datetime.fromisoformat(it['from'].replace('Z', '+00:00'))
     for k in ('lab', 'name', 'dl', 'short', 'by'):
